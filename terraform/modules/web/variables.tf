@@ -1,4 +1,4 @@
 variable "rds_identifier" {
-    type = string
-    default = "django_sample"
+  type = string
+  default = "django_sample"
 }

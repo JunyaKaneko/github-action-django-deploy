@@ -2,7 +2,6 @@ provider "aws" {
   region = "us-west-2"
 }
 
-module "rds" {
+module "web" {
   source = "../modules/web"
-  rds_identifier = "django-sample-dev"
 }

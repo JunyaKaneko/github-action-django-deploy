@@ -1,4 +1,4 @@
-resource "aws_db_instance" "django-sample" {
+resource "aws_db_instance" "django-rds" {
   identifier = var.rds_identifier
   allocated_storage = 20
   storage_type = "gp2"

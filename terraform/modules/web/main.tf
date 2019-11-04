@@ -42,12 +42,71 @@ resource "aws_route_table" "web" {
 }
 
 resource "aws_route_table_association" "web" {
-  count =2
+  count = 2
 
   subnet_id = aws_subnet.web.*.id[count.index]
   route_table_id = aws_route_table.web.id
 }
 
+resource "aws_iam_role" "web-cluster" {
+  name = "web-cluster"
+
+  assume_role_policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "eks.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+POLICY
+}
+
+resource "aws_iam_role_policy_attachment" "web-cluster-AmazonEKSCluterPolicy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+  role = aws_iam_role.web-cluster.name
+}
+
+resource "aws_iam_role_policy_attachment" "web-cluster-AmazonEKSServicePolicy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSServicePolicy"
+  role = aws_iam_role.web-cluster.name
+}
+
+resource "aws_security_group" "web-cluster" {
+  name = "web-cluster"
+  vpc_id = aws_vpc.web.id
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "web-cluster"
+  }
+}
+
+resource "aws_eks_cluster" "web" {
+  name = var.eks-cluster-name
+  role_arn = aws_iam_role.web-cluster.arn
+
+  vpc_config {
+    security_group_ids = [aws_security_group.web-cluster.id]
+    subnet_ids = aws_subnet.web.*.id
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.web-cluster-AmazonEKSCluterPolicy,
+    aws_iam_role_policy_attachment.web-cluster-AmazonEKSServicePolicy,
+  ]
+}
 
 resource "aws_db_instance" "rds" {
   identifier = var.rds_identifier
